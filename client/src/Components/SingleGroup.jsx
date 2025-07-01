@@ -2,11 +2,28 @@ import React, { useState } from 'react';
 import axios from 'axios';
 
 export default function SingleGroup({GroupName, GroupID, onLeave}) {
+
     const [showLeaderboard, setShowLeaderboard] = useState(false);
     const [leaderboardData, setLeaderboardData] = useState([]);
-    let userID = localStorage.getItem('userID');
+    
+    const [userID, setUserID] = useState(null);
+
+    React.useEffect(() => {
+        const fetchUserID = async () => {
+            try {
+                const resp = await axios.get('http://localhost:5000/auth/check',  {withCredentials: true});
+                if (resp.data.success) {
+                    setUserID(resp.data.userID);
+                }
+            } catch (error) {
+                setUserID(null);
+            }
+        };
+        fetchUserID();
+    }, []);
+    
     async function leaveGroup() {
-        const response = await axios.post('http://localhost:5000/groups/leave', {userID: userID, groupID: GroupID});
+        const response = await axios.post(`http://localhost:5000/groups/${GroupID}/leave`, {}, {withCredentials: true});
         if(response.data.success){
             setShowLeaderboard(false);
             onLeave();
@@ -16,29 +33,34 @@ export default function SingleGroup({GroupName, GroupID, onLeave}) {
             alert(response.data.message);
         }
     }
-
-    async function fetchLeaderboard() {
-        const response = await axios.post('http://localhost:5000/groups/leaderboard', {groupID: GroupID, userID: userID});
-        setLeaderboardData(response.data);
-        
-        setShowLeaderboard(true);
-
+    function getTime(seconds){
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secondss = seconds % 60;
+        return (
+            <span style={{color:'white'}}>
+                {hours}:{minutes}:{secondss} 
+            </span>
+        );
     }
-
+    async function fetchLeaderboard() {
+        const response = await axios.get(`http://localhost:5000/groups/${GroupID}/leaderboard`, {withCredentials: true});
+        setLeaderboardData(response.data); // set the array to response data
+        setShowLeaderboard(true);
+    }
     return (
         <div>
             <h1>{GroupName} : {GroupID}</h1>
             <button onClick={leaveGroup}>Leave</button>
             <button onClick={fetchLeaderboard}>Leaderboard</button>
-
+            
             {showLeaderboard && (
-                <div>
+                <div style={{color:'white'}}>
                     <h2>Leaderboard</h2>
-                    <button onClick={() => setShowLeaderboard(false)}>Close</button>
+                    <button onClick={() => setShowLeaderboard(false)}>Close</button> {/* for closing lb*/ }
                     {leaderboardData.map((entry, index) => (
                         <div key={index}>
-                            <span>{index + 1}. {entry.userid}   </span>
-                            <span>{entry.timestudied}</span>
+                            <div>{entry.userid} --- {getTime(entry.timestudied)}</div>
                         </div>
                     ))}
                 </div>

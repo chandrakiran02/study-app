@@ -7,80 +7,85 @@ import SingleGroup from './SingleGroup';
 
 export default function Groups() {
 
+    const [joined, setJoined] = useState(false); // When i join a group, for triggering a rerender.
 
-    const [joined, setJoined] = useState(false);
     const [createGroupName, setCreateGroupName] = useState('');
-
     function putCreateGroupName(e) {
         setCreateGroupName(e.target.value);
     }
-    let userID = localStorage.getItem('userID');
-    async function createGroup({groupName}) {
-        const response = await axios.post('http://localhost:5000/groups/create', {groupName: groupName, userID: userID});
+    
+    const [groups, setGroups] = useState([]);
+    
+    const [joingrpval, setjoingrpval] = useState(0);
+    function setjoinGrpval(e) {
+        setjoingrpval(e.target.value);
+    }
+
+    const [userID, setUserID] = useState(null);
+    useEffect(() => {
+        const fetchUserID = async () => {
+            try {
+                const resp = await axios.get('http://localhost:5000/auth/check', {withCredentials: true});
+                if (resp.success) {
+                    setUserID(resp.userID);
+                } else {
+                    setUserID(null);
+                }
+            } catch (error) {
+                setUserID(null);
+            }
+        };
+        fetchUserID();
+    }, []);
+
+    useEffect(() => {
+        fetchGroups();
+    }, [userID]);
+
+
+
+    async function createGroup({groupName}) { // API CALL FUNCTION
+        const response = await axios.post('http://localhost:5000/groups', {groupName: groupName}, {withCredentials: true});
         if(response.data.success){
             alert("Group Created");
+            fetchGroups(); // refresh list so newly created group appears immediately
         }
         else{
             alert(response.data.message);
         }
     }
 
-    const [groups, setGroups] = useState([]);
-
-    const fetchGroups = async () => {
+    const fetchGroups = async () => { // API CALL FUNCTION
         try {
-            const response = await axios.post(`http://localhost:5000/groups/`, {userID: userID});
+            const response = await axios.get(`http://localhost:5000/groups`, {withCredentials: true});
             setGroups(response.data);
         } catch (error) {
             console.log(error);
         }
     };
 
-    useEffect(() => {
-        fetchGroups();
-    }, [userID]);
 
-    async function joinGroup({groupID}){
+    async function joinGroup({groupID}) { // API CALL FUNCTION
         try{
-            const response = await axios.post('http://localhost:5000/groups/join', {userID: userID, groupID: groupID});
+            const response = await axios.post(`http://localhost:5000/groups/${groupID}/join`, {}, {withCredentials: true});
             if(response.data.success){
                 alert("Joined Group");
                 fetchGroups(); // Fetch updated groups list after joining
+                // Trigger Rerender.  
                 setJoined(true);
+                setJoined(false);
             }
             else if(!response.data.success){
                 alert(response.data.message);
-            }
-            if(joined) {
-                setJoined(false);
             }
         }catch(error){
             console.log(error);
         }
     }
 
-    const [joingrpval, setJoinGrpval] = useState(0);
-    function setjoingrpval(e) {
-        setJoinGrpval(e.target.value);
-    }
-
-    const [selectedGroup, setSelectedGroup] = useState(0);
-
-    function selectGroup(e) {
-        setSelectedGroup(e.target.value);
-    }
-
-    function selectThisGroup() {
-        localStorage.setItem('selectedGroupID', selectedGroup);
-        alert("Group Selected");
-    }
 
     return (
-        <div>
-            {/*Select Group to Study In*/}
-            <h1>Select Group to Study In: </h1>
-            <input type="number" placeholder="Enter GroupID Here." onChange={selectGroup} value={selectedGroup}></input>
-            <button onClick={selectThisGroup}>Select This Group</button>
+        <div style={{color:'white'}}>
 
             {/*Groups you are In
                 ikkada add cards that has a button to leave/ show leaderboard / show members
@@ -88,14 +93,12 @@ export default function Groups() {
             <h1>Groups you are In : </h1>
             {
             /*
-            When React renders this, it:
-            Takes the array of components
-            Renders each component in order
-            Places them in the DOM where you put the map expression
-            So if you were to look at the rendered HTML, you would see something like:
-
-            two divs. inside the divs, we have Single group components.
-
+                When React renders this, it:
+                Takes the array of components
+                Renders each component in order
+                Places them in the DOM where you put the map expression
+                So if you were to look at the rendered HTML, you would see something like:
+                two divs. inside the divs, we have Single group components
             */
             }
 
@@ -104,12 +107,12 @@ export default function Groups() {
                     key={group.groupid} 
                     GroupName={group.groupname} 
                     GroupID={group.groupid}
-                    onLeave={fetchGroups} 
+                    onLeave={fetchGroups} // for
                 />
             ))}
 
             {/* Join Group */}
-            <input type="number" placeholder="groupID" value={joingrpval} onChange={setjoingrpval}></input>
+            <input type="number" placeholder="groupID" value={joingrpval} onChange={setjoinGrpval}></input>
             <button onClick={() => joinGroup({ groupID: joingrpval })}>Join Group</button>
 
             {/*Create Group*/}

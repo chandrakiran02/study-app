@@ -4,17 +4,23 @@ import { useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import SelectTime from './SelectTime';
 import Groups from './Groups';
+import Silk from './Silk';
+import axios from 'axios';
 
 
 function HomePage({ updateLoggedIn }) {
 
-    function logOut() {
-        localStorage.setItem('userID', null);
-        updateLoggedIn();
+    async function logOut() {
+        try {
+            let resp = await axios.post('/auth/logout', {}, { withCredentials: true });
+            updateLoggedIn(); // Update state
+        } catch (error) {
+            
+        }
     }
 
     return (
-        <div>
+        <div style={{color:'white'}}>
             <SelectTime />
             <button onClick={logOut}>Log Out</button>
             <Groups />

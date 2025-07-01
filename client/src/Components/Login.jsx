@@ -2,29 +2,27 @@ import React, { useState } from 'react';
 import axios from 'axios';
 
 export default function Login({ updateLoggedIn }) {
+
     let [username, setUsername] = useState('');
     let [password, setPassword] = useState('');
 
-    function changeUsername(input) {
+    function changeUsername(input) { // Functions for setting the above.
         setUsername(input.target.value);
     }
-    
     function changePassword(input) {
         setPassword(input.target.value);
     }
 
+
     async function login(e) {
         e.preventDefault(); // Prevent form submission
         try {
-
-            const response = await axios.post('http://localhost:5000/login', {
+            const response = await axios.post('http://localhost:5000/auth/login', {
                 username: username,
-                password: password
-            });
-
+                password: password,
+            }, { withCredentials: true });
             if(response.data.success) {
                 updateLoggedIn(); 
-                localStorage.setItem('userID', username);
             } else {
                 alert('Login failed: ' + "Invalid username or password");
             }
@@ -37,9 +35,10 @@ export default function Login({ updateLoggedIn }) {
     async function signUp(e) {
         e.preventDefault(); // Prevent form submission
         try {
-            const response = await axios.post('http://localhost:5000/signup', {username: username, password: password});
+            const response = await axios.post('http://localhost:5000/auth/signup', {username: username, password: password}, { withCredentials: true } );
             if(response.data.success) {
                 alert("Signup successful");
+                updateLoggedIn();
             }
             else {
                 alert("Signup failed: " + response.data.message);
@@ -50,21 +49,17 @@ export default function Login({ updateLoggedIn }) {
         }
         
     }
-
-    async function logOut() {
-        localStorage.setItem('userID', null);
-        
-    }
     
     return (
-        <div>
+        <div style={{}}>
             <form onSubmit={login}>
                 <input 
                     type="text" 
                     value={username} 
                     onChange={changeUsername}
                     placeholder="Username"
-                />
+                /> 
+                
                 <input 
                     type="password" 
                     value={password} 
